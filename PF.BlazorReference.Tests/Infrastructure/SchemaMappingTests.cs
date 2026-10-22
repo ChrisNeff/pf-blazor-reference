@@ -1,0 +1,96 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using PF.BlazorReference.Core;
+using PF.BlazorReference.Core.Entities;
+using PF.BlazorReference.Tests.Support;
+
+namespace PF.BlazorReference.Tests.Infrastructure;
+
+/// <summary>Proves the hand-written EF mappings and the audit interceptor against the real schema.sql.</summary>
+public sealed class SchemaMappingTests : IAsyncDisposable
+{
+    private readonly SqliteTestDatabase database = new();
+
+    public ValueTask DisposeAsync() => database.DisposeAsync();
+
+    private static DeveloperRegistration NewRegistration(string email) =>
+        DeveloperRegistration.Create("Ada", email).Value;
+
+    [Fact]
+    public async Task An_entity_round_trips_through_the_schema()
+    {
+        var original = NewRegistration("ada@example.com");
+        await using (var db = database.NewContext())
+        {
+            db.DeveloperRegistrations.Add(original);
+            await db.SaveChangesAsync();
+        }
+
+        await using var read = database.NewContext();
+        var loaded = await read.DeveloperRegistrations.SingleAsync();
+
+        Assert.Equal(original.Id, loaded.Id);
+        Assert.Equal(original.Name, loaded.Name);
+        Assert.Equal(original.Email, loaded.Email);
+        Assert.Equal(RegistrationStatus.Pending, loaded.Status);
+    }
+
+    [Fact]
+    public async Task The_unique_email_index_is_translated_to_the_core_exception()
+    {
+        await using (var first = database.NewContext())
+        {
+            first.DeveloperRegistrations.Add(NewRegistration("ada@example.com"));
+            await first.SaveChangesAsync();
+        }
+
+        await using var second = database.NewContext();
+        second.DeveloperRegistrations.Add(NewRegistration("ada@example.com"));
+
+        await Assert.ThrowsAsync<UniqueConstraintViolationException>(() => second.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task An_insert_stamps_both_audit_timestamps_with_the_current_utc_time()
+    {
+        await using var db = database.NewContext();
+        var registration = NewRegistration("ada@example.com");
+        db.DeveloperRegistrations.Add(registration);
+
+        await db.SaveChangesAsync();
+
+        Assert.Equal(database.Time.GetUtcNow().UtcDateTime, registration.CreatedAtUtc);
+        Assert.Equal(registration.CreatedAtUtc, registration.LastUpdatedUtc);
+        Assert.Equal(DateTimeKind.Utc, registration.CreatedAtUtc.Kind);
+    }
+
+    [Fact]
+    public async Task An_update_stamps_only_the_last_updated_timestamp()
+    {
+        await using var db = database.NewContext();
+        var registration = NewRegistration("ada@example.com");
+        db.DeveloperRegistrations.Add(registration);
+        await db.SaveChangesAsync();
+        var created = registration.CreatedAtUtc;
+
+        database.Time.Advance(TimeSpan.FromHours(1));
+        db.Entry(registration).Property(r => r.Name).CurrentValue = "Ada Byron";
+        await db.SaveChangesAsync();
+
+        Assert.Equal(created, registration.CreatedAtUtc);
+        Assert.Equal(created.AddHours(1), registration.LastUpdatedUtc);
+    }
+
+    [Fact]
+    public async Task The_schema_refuses_the_invalid_status()
+    {
+        await using var db = database.NewContext();
+
+        // Raw SQL: the entity has no way to hold Invalid, which is the point of the sentinel.
+        var insert = db.Database.ExecuteSqlRawAsync(
+            "INSERT INTO DeveloperRegistrations (Id, Name, Email, Status, CreatedAtUtc, LastUpdatedUtc) " +
+            "VALUES ('00000000-0000-0000-0000-000000000001', 'Ada', 'ada@example.com', 'Invalid', '2026-10-21 12:00:00', '2026-10-21 12:00:00')");
+
+        await Assert.ThrowsAsync<SqliteException>(() => insert);
+    }
+}

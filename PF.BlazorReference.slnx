@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="PF.BlazorReference.Core/PF.BlazorReference.Core.csproj" />
+  <Project Path="PF.BlazorReference.Infrastructure/PF.BlazorReference.Infrastructure.csproj" />
+  <Project Path="PF.BlazorReference.SharedLibrary/PF.BlazorReference.SharedLibrary.csproj" />
+  <Project Path="PF.BlazorReference.Tests/PF.BlazorReference.Tests.csproj" />
+  <Project Path="PF.BlazorReference.Web/PF.BlazorReference.Web.csproj" />
+</Solution>
