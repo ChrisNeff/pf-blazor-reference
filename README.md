@@ -57,7 +57,8 @@ Web ──────────► Core ◄────────── Inf
 | Container and presentation components | `Web/Features/Registration/*Page.razor(.cs)`, `.../Components/` |
 | Form record with annotations, rules repeated in Core | `Web/Features/Registration/RegisterDeveloperForm.cs` |
 | Static SSR by default, one interactive island | `Web/Components/Routes.razor`, `SharedLibrary/NavIsland.razor` |
-| Shell takes nav items from the app | `Web/Components/Layout/MainLayout.razor`, `SharedLibrary/AppShell.razor` |
+| Shell takes nav items from the app, as an array | `Web/Components/Layout/MainLayout.razor`, `SharedLibrary/AppShell.razor` |
+| Interactive parameters must be serializable, enforced | `SharedLibrary/NavIsland.razor`, `Tests/Architecture/ArchitectureTests.cs` |
 | Branding as CSS tokens | `SharedLibrary/wwwroot/pf-tokens.css` |
 | Use cases unit-tested with a substituted factory and port, no database | `Tests/Support/FakeConsentIdentityDb.cs`, `Tests/Core/` |
 | EF behaviour tested against real SQLite built from `schema.sql` | `Tests/Support/SqliteTestDatabase.cs`, `Tests/Infrastructure/` |
@@ -72,7 +73,3 @@ Web ──────────► Core ◄────────── Inf
 - **No authentication.** The shell takes nav items from the app, but there is no sign-in display or policy.
 - **No component tests (bUnit).** The toast and the interactive table are checked by hand.
 - **Static pages use plain HTML inputs.** MudBlazor inputs need a circuit.
-
-## One gotcha worth knowing
-
-Parameters passed into the interactive nav island are serialized across the static-to-interactive boundary. A collection expression assigned to an `IReadOnlyList<T>` compiles to a hidden compiler type that cannot be deserialized, and the whole circuit then fails with "The list of component operations is not valid." Pass a real array.

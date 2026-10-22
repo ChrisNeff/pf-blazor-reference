@@ -63,7 +63,8 @@ A **use case** is one class named `<Verb><Noun>UseCase`, in `Core/Features/<Feat
 
 - **Static SSR by default.** `Routes.razor` sets no render mode. A page that needs interactivity declares its own `@rendermode`.
 - The layout is static. The only interactive piece is `NavIsland` (app bar and drawer), which also hosts the MudBlazor providers.
-- Nav items are passed in by the app. Parameters that cross into `NavIsland` must be JSON-deserializable: pass a real array, never an `IReadOnlyList` built from a collection expression.
+- Nav items are passed in by the app, as `NavItem[]`.
+- Parameters of an interactive component (any component with a `@rendermode`, including a routable page) must be concrete serializable types: primitives, enums, records, arrays or `List<T>`. No interfaces, delegates, `RenderFragment` or `EventCallback`. An architecture test enforces this and explains why when it fails.
 - Components split into **container** and **presentation**.
   - A **container** is the routable page. It owns the route, the render mode, state, and the use-case calls, and passes data down. Only containers inject services.
   - A **presentation** component takes `[Parameter]` in, raises `EventCallback` out, and has no `@inject` / `[Inject]`. They live in `Features/<Feature>/Components/` or in SharedLibrary. An architecture test enforces this.

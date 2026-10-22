@@ -6,9 +6,7 @@
 </AppShell>
 
 @code {
-    // A real array, not an IReadOnlyList built from a collection expression: the compiler would
-    // synthesize a hidden collection type that cannot be deserialized when the island's parameters
-    // cross to the circuit, and the whole circuit fails with "component operations is not valid".
+    // NavItem[] is what the shell's parameters require; see the comment on NavIsland.NavItems.
     private static readonly NavItem[] NavItems =
     [
         new("Home", "/", Icons.Material.Filled.Home, ExactMatch: true),

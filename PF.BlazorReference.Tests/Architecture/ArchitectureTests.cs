@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using NetArchTest.Rules;
 using PF.BlazorReference.Core;
 using PF.BlazorReference.Infrastructure;
@@ -120,6 +121,43 @@ public class ArchitectureTests
 
         Assert.True(offenders.Count == 0, "Presentation components must not inject services: " + string.Join(", ", offenders));
     }
+
+    [Fact]
+    public void Interactive_components_take_only_parameters_that_can_cross_the_render_mode_boundary()
+    {
+        // A component with a render mode is an interactive root: when a static parent renders it, its
+        // parameters are serialized by their runtime type and deserialized on the circuit. An interface
+        // type lets a hidden compiler type through (a collection expression assigned to IReadOnlyList<T>
+        // is the classic case), and the whole circuit fails to start. Delegates and EventCallback cannot
+        // be serialized at all.
+        var interactiveRoots = SharedLibrary.GetTypes().Concat(Web.GetTypes())
+            .Where(IsComponent)
+            .Where(t => t.GetCustomAttributes(inherit: true).Any(a => a is RenderModeAttribute))
+            .ToList();
+
+        // Guard against the rule passing vacuously.
+        Assert.Contains(interactiveRoots, t => t.Name == "NavIsland");
+        Assert.Contains(interactiveRoots, t => t.Name == "RegistrationsPage");
+
+        var offenders = interactiveRoots
+            .SelectMany(t => t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(p => p.GetCustomAttribute<ParameterAttribute>() is { CaptureUnmatchedValues: false })
+                .Select(p => (Type: t, Property: p, ParameterType: Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType))
+                .Where(x => !CanCrossRenderModeBoundary(x.ParameterType))
+                .Select(x => $"{x.Type.Name}.{x.Property.Name} ({x.ParameterType.Name})"))
+            .ToList();
+
+        Assert.True(offenders.Count == 0,
+            "Interactive component parameters must be concrete, serializable types (use an array or List<T>, not an interface; no delegates or EventCallback): "
+            + string.Join(", ", offenders));
+    }
+
+    private static bool CanCrossRenderModeBoundary(Type type) =>
+        !type.IsInterface
+        && !(type.IsAbstract && !type.IsSealed) // abstract classes; arrays and static types are fine
+        && !typeof(Delegate).IsAssignableFrom(type)
+        && type != typeof(EventCallback)
+        && !(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(EventCallback<>));
 
     /// <summary>Everything in the shared library, plus components under Features/&lt;Feature&gt;/Components in an app.</summary>
     private static IEnumerable<Type> PresentationComponents() =>
