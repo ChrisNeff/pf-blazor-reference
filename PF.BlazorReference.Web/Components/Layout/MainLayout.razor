@@ -1,0 +1,18 @@
+@inherits LayoutComponentBase
+
+@* The app supplies its own nav items; the shell has no knowledge of this app's pages. *@
+<AppShell AppTitle="Developer Registration" NavItems="NavItems">
+    @Body
+</AppShell>
+
+@code {
+    // A real array, not an IReadOnlyList built from a collection expression: the compiler would
+    // synthesize a hidden collection type that cannot be deserialized when the island's parameters
+    // cross to the circuit, and the whole circuit fails with "component operations is not valid".
+    private static readonly NavItem[] NavItems =
+    [
+        new("Home", "/", Icons.Material.Filled.Home, ExactMatch: true),
+        new("Register", "/register", Icons.Material.Filled.PersonAdd),
+        new("Registrations", "/registrations", Icons.Material.Filled.List),
+    ];
+}

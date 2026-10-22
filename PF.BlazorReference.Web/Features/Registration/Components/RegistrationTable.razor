@@ -1,0 +1,38 @@
+@namespace PF.BlazorReference.Web.Features.Registration.Components
+@using PF.BlazorReference.Core.Features.Registration
+
+@* Presentation component: sorting and filtering are local view state, not data access. *@
+<MudDataGrid T="ListRegistrationsUseCase.Item" Items="Items" SortMode="SortMode.Multiple" QuickFilter="MatchesSearch"
+             RowClassFunc="RowClass" Hover="true" Dense="true">
+    <ToolBarContent>
+        <MudTextField @bind-Value="search" Placeholder="Search name or email" Immediate="true"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="r => r.Name" Title="Name" />
+        <PropertyColumn Property="r => r.Email" Title="Email" />
+        <PropertyColumn Property="r => r.Status" Title="Status" />
+        <PropertyColumn Property="r => r.CreatedAtUtc" Title="Created (UTC)" Format="yyyy-MM-dd HH:mm" />
+    </Columns>
+    <NoRecordsContent>No registrations yet.</NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="ListRegistrationsUseCase.Item" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private string? search;
+
+    [Parameter, EditorRequired] public IReadOnlyList<ListRegistrationsUseCase.Item> Items { get; set; } = [];
+
+    /// <summary>The row to highlight, such as the one just registered.</summary>
+    [Parameter] public Guid? HighlightId { get; set; }
+
+    private bool MatchesSearch(ListRegistrationsUseCase.Item item) =>
+        string.IsNullOrWhiteSpace(search)
+        || item.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+        || item.Email.Contains(search, StringComparison.OrdinalIgnoreCase);
+
+    private string RowClass(ListRegistrationsUseCase.Item item, int index) =>
+        item.Id == HighlightId ? "pf-row-highlight" : "";
+}

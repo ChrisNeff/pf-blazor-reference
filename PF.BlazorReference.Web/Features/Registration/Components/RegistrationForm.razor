@@ -1,0 +1,43 @@
+@namespace PF.BlazorReference.Web.Features.Registration.Components
+
+@* Presentation component: parameters in, an EventCallback out, nothing injected. *@
+<EditForm Model="Model" FormName="@FormName" OnValidSubmit="OnValidSubmit" class="pf-form" novalidate>
+    <DataAnnotationsValidator />
+
+    <div class="pf-field">
+        <label for="name">Name</label>
+        <InputText id="name" @bind-Value="Model.Name" autocomplete="name" />
+        <ValidationMessage For="() => Model.Name" />
+        @foreach (var message in ServerMessages(nameof(Model.Name)))
+        {
+            <p class="pf-field-error">@message</p>
+        }
+    </div>
+
+    <div class="pf-field">
+        <label for="email">Email</label>
+        <InputText id="email" type="email" @bind-Value="Model.Email" autocomplete="email" />
+        <ValidationMessage For="() => Model.Email" />
+        @foreach (var message in ServerMessages(nameof(Model.Email)))
+        {
+            <p class="pf-field-error">@message</p>
+        }
+    </div>
+
+    <button type="submit" class="pf-button">Register</button>
+</EditForm>
+
+@code {
+    /// <summary>The form's name, shared with the container's [SupplyParameterFromForm].</summary>
+    public const string FormName = "register";
+
+    /// <summary>Posted field names start with this (the <see cref="Model"/> parameter name); the container binds with it.</summary>
+    public const string FieldPrefix = nameof(Model);
+
+    [Parameter, EditorRequired] public RegisterDeveloperForm Model { get; set; } = default!;
+    [Parameter] public IReadOnlyDictionary<string, string[]> ServerErrors { get; set; } = new Dictionary<string, string[]>();
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+
+    private string[] ServerMessages(string field) =>
+        ServerErrors.TryGetValue(field, out var messages) ? messages : [];
+}

@@ -1,0 +1,8 @@
+@* Static by default: no render mode here. A page opts in with @rendermode, and the shell's
+   NavIsland is the only interactive piece of the layout. *@
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

@@ -1,0 +1,37 @@
+@rendermode RenderMode.InteractiveServer
+
+@* The one interactive island in an otherwise static layout: app bar, drawer, and the MudBlazor
+   providers. Every interactive page on the same circuit shares these providers, which is why a page
+   can call ISnackbar without hosting a MudSnackbarProvider itself. *@
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Class="pf-appbar">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       Class="pf-menu-button" aria-label="Toggle navigation" OnClick="ToggleDrawer" />
+        <MudText Typo="Typo.h6">@AppTitle</MudText>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md"
+               ClipMode="DrawerClipMode.Always" Elevation="0" Class="pf-drawer">
+        <MudNavMenu>
+            @foreach (var item in NavItems)
+            {
+                <MudNavLink Href="@item.Href" Icon="@item.Icon"
+                            Match="@(item.ExactMatch ? NavLinkMatch.All : NavLinkMatch.Prefix)">@item.Title</MudNavLink>
+            }
+        </MudNavMenu>
+    </MudDrawer>
+</MudLayout>
+
+@code {
+    private bool drawerOpen = true;
+
+    [Parameter, EditorRequired] public string AppTitle { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<NavItem> NavItems { get; set; } = [];
+
+    private void ToggleDrawer() => drawerOpen = !drawerOpen;
+}

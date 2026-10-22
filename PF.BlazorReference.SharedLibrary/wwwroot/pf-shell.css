@@ -1,0 +1,84 @@
+body {
+    margin: 0;
+    background: var(--pf-color-background);
+    color: var(--pf-color-text);
+    font-family: var(--pf-font-family);
+}
+
+/* Static page content sits below the app bar and beside the drawer. */
+.pf-main {
+    box-sizing: border-box;
+    padding: calc(var(--pf-appbar-height) + var(--pf-spacing)) var(--pf-spacing) var(--pf-spacing);
+}
+
+@media (min-width: 960px) {
+    .pf-main {
+        margin-left: var(--pf-drawer-width);
+    }
+
+    /* The drawer is always open on wide screens, so the toggle only exists on narrow ones. */
+    .pf-menu-button {
+        display: none !important;
+    }
+}
+
+.pf-error {
+    max-width: 40rem;
+    padding: var(--pf-spacing);
+    border: 1px solid var(--pf-color-error);
+    border-radius: var(--pf-radius);
+    background: var(--pf-color-surface);
+}
+
+/* Plain HTML form styling: MudBlazor inputs need a circuit, and static SSR pages have none. */
+.pf-form {
+    display: grid;
+    gap: var(--pf-spacing);
+    max-width: 28rem;
+    padding: var(--pf-spacing);
+    border: 1px solid var(--pf-color-border);
+    border-radius: var(--pf-radius);
+    background: var(--pf-color-surface);
+}
+
+.pf-field {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.pf-field label {
+    font-weight: 600;
+}
+
+.pf-field input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--pf-color-border);
+    border-radius: var(--pf-radius);
+    font: inherit;
+}
+
+.pf-field input.invalid {
+    border-color: var(--pf-color-error);
+}
+
+.pf-field-error,
+.validation-message {
+    margin: 0;
+    color: var(--pf-color-error);
+    font-size: 0.875rem;
+}
+
+.pf-button {
+    justify-self: start;
+    padding: 0.5rem 1.25rem;
+    border: 0;
+    border-radius: var(--pf-radius);
+    background: var(--pf-color-primary);
+    color: var(--pf-color-primary-contrast);
+    font: inherit;
+    cursor: pointer;
+}
+
+.pf-row-highlight {
+    background: color-mix(in srgb, var(--pf-color-primary) 12%, transparent);
+}

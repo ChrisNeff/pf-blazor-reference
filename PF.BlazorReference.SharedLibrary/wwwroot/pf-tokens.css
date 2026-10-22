@@ -1,0 +1,31 @@
+/* Branding is CSS tokens, not a C# MudTheme class. Change these values to re-brand an app.
+   The html:root selector outranks the plain :root block that MudThemeProvider emits later in the page. */
+:root {
+    --pf-color-primary: #1f5f99;
+    --pf-color-primary-contrast: #ffffff;
+    --pf-color-surface: #ffffff;
+    --pf-color-background: #f4f6f8;
+    --pf-color-text: #1c2733;
+    --pf-color-text-muted: #5b6b7b;
+    --pf-color-error: #b3261e;
+    --pf-color-border: #c9d2db;
+
+    --pf-font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --pf-radius: 6px;
+    --pf-spacing: 1rem;
+    --pf-appbar-height: 64px;
+    --pf-drawer-width: 240px;
+}
+
+html:root {
+    --mud-palette-primary: var(--pf-color-primary);
+    --mud-palette-primary-text: var(--pf-color-primary-contrast);
+    --mud-palette-appbar-background: var(--pf-color-primary);
+    --mud-palette-appbar-text: var(--pf-color-primary-contrast);
+    --mud-palette-background: var(--pf-color-background);
+    --mud-palette-surface: var(--pf-color-surface);
+    --mud-palette-drawer-background: var(--pf-color-surface);
+    --mud-palette-text-primary: var(--pf-color-text);
+    --mud-palette-error: var(--pf-color-error);
+    --mud-typography-default-family: var(--pf-font-family);
+}

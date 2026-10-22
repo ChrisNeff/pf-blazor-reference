@@ -1,0 +1,21 @@
+@* The application shell: static markup around one interactive island. No services are injected,
+   so it can sit in this library without knowing about any app. *@
+<NavIsland AppTitle="@AppTitle" NavItems="@NavItems" />
+
+<main class="pf-main">
+    <ErrorBoundary>
+        <ChildContent>@ChildContent</ChildContent>
+        <ErrorContent>
+            <div class="pf-error" role="alert">
+                <h1>Something went wrong</h1>
+                <p>An unexpected error occurred. Reload the page to try again.</p>
+            </div>
+        </ErrorContent>
+    </ErrorBoundary>
+</main>
+
+@code {
+    [Parameter, EditorRequired] public string AppTitle { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<NavItem> NavItems { get; set; } = [];
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -1,0 +1,21 @@
+@page "/registrations"
+@* Interactive for this page only; prerender is off so the data loads once, on the circuit. *@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using PF.BlazorReference.Web.Features.Registration.Components
+
+<PageTitle>Registrations</PageTitle>
+
+<h1>Registrations</h1>
+
+@if (state.Error is not null)
+{
+    <MudAlert Severity="Severity.Error">@state.Error</MudAlert>
+}
+else if (state.Loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else
+{
+    <RegistrationTable Items="state.Items" HighlightId="highlightId" />
+}

@@ -1,0 +1,12 @@
+@page "/register"
+@using Microsoft.AspNetCore.RateLimiting
+@using PF.BlazorReference.Web.Features.Registration.Components
+@using PF.BlazorReference.Web.RateLimiting
+@* The only public write path, so the only rate limited page. *@
+@attribute [EnableRateLimiting(RateLimitPolicies.Registration)]
+
+<PageTitle>Register</PageTitle>
+
+<h1>Register as a developer</h1>
+
+<RegistrationForm Model="Form!" ServerErrors="serverErrors" OnValidSubmit="SubmitAsync" />
