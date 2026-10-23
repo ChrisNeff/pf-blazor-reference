@@ -18,6 +18,8 @@ public sealed class DeveloperRegistrationConfiguration : IEntityTypeConfiguratio
         builder.Property(r => r.Name).IsRequired().HasMaxLength(DeveloperRegistration.NameMaxLength);
         builder.Property(r => r.Email).IsRequired().HasMaxLength(DeveloperRegistration.EmailMaxLength);
         builder.Property(r => r.Status).HasConversion<string>().IsRequired();
+        builder.Property(r => r.EntraObjectId).HasMaxLength(64);
+        builder.Property(r => r.ProvisioningError).HasMaxLength(DeveloperRegistration.ProvisioningErrorMaxLength);
 
         // SQLite stores DateTime as text and reads it back with Kind Unspecified; restore UTC.
         builder.Property(r => r.CreatedAtUtc).HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));

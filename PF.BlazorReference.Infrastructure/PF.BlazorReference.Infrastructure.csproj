@@ -7,12 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.21.0" PrivateAssets="compile;contentfiles;analyzers;build" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.13" />
+    <!-- Graph is used only by GraphUserManagementService. PrivateAssets="compile" keeps its types out of
+         the projects that reference this one (they still get the assemblies at runtime). -->
+    <PackageReference Include="Microsoft.Graph" Version="6.8.0" PrivateAssets="compile;contentfiles;analyzers;build" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PF.BlazorReference.Core\PF.BlazorReference.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PF.BlazorReference.Tests" />
   </ItemGroup>
 
   <ItemGroup>

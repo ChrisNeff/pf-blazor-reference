@@ -1,4 +1,5 @@
 @namespace PF.BlazorReference.Web.Features.Registration.Components
+@using PF.BlazorReference.Core.Entities
 @using PF.BlazorReference.Core.Features.Registration
 
 @* Presentation component: sorting and filtering are local view state, not data access. *@
@@ -13,6 +14,18 @@
         <PropertyColumn Property="r => r.Email" Title="Email" />
         <PropertyColumn Property="r => r.Status" Title="Status" />
         <PropertyColumn Property="r => r.CreatedAtUtc" Title="Created (UTC)" Format="yyyy-MM-dd HH:mm" />
+        @if (CanProvision)
+        {
+            <TemplateColumn T="ListRegistrationsUseCase.Item" Title="Entra" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Send"
+                               Disabled="@(!DeveloperRegistration.CanRequestProvisioning(context.Item.Status) || context.Item.Id == BusyId)"
+                               OnClick="@(() => OnProvision.InvokeAsync(context.Item.Id))">
+                        @(context.Item.Status == RegistrationStatus.ProvisioningFailed ? "Retry invite" : "Invite")
+                    </MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        }
     </Columns>
     <NoRecordsContent>No registrations yet.</NoRecordsContent>
     <PagerContent>
@@ -27,6 +40,15 @@
 
     /// <summary>The row to highlight, such as the one just registered.</summary>
     [Parameter] public Guid? HighlightId { get; set; }
+
+    /// <summary>Whether to show the button that requests an Entra guest invitation for a row.</summary>
+    [Parameter] public bool CanProvision { get; set; }
+
+    /// <summary>The row whose request is in flight; its button is disabled.</summary>
+    [Parameter] public Guid? BusyId { get; set; }
+
+    /// <summary>Raised with the registration id when its Entra invitation is requested.</summary>
+    [Parameter] public EventCallback<Guid> OnProvision { get; set; }
 
     private bool MatchesSearch(ListRegistrationsUseCase.Item item) =>
         string.IsNullOrWhiteSpace(search)

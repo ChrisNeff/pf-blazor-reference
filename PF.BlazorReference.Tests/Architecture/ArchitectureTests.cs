@@ -53,6 +53,42 @@ public class ArchitectureTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    private static readonly string[] GraphNamespaces = ["Microsoft.Graph", "Microsoft.Kiota", "Azure.Identity", "Azure.Core"];
+
+    [Fact]
+    public void Only_Infrastructure_references_Microsoft_Graph()
+    {
+        var offenders = new[] { Core, SharedLibrary, Web }
+            .SelectMany(assembly => Types.InAssembly(assembly).ShouldNot().HaveDependencyOnAny(GraphNamespaces).GetResult().FailingTypeNames ?? [])
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Microsoft Graph is used only in Infrastructure: " + string.Join(", ", offenders));
+    }
+
+    [Fact]
+    public void Within_Infrastructure_only_GraphUserManagementService_touches_the_Graph_client()
+    {
+        // The service builds its own GraphServiceClient and never hands it out. Its compiler-generated
+        // nested types (async state machines, lambdas) count as the service.
+        const string owner = "PF.BlazorReference.Infrastructure.UserManagement.GraphUserManagementService";
+        var users = Types.InAssembly(Infrastructure).That().HaveDependencyOnAny(GraphNamespaces).GetTypes().ToList();
+
+        Assert.Contains(users, t => t.FullName == owner); // guard against passing vacuously
+        var offenders = users.Where(t => t.FullName != owner && t.FullName?.StartsWith(owner + "+", StringComparison.Ordinal) != true);
+        Assert.True(!offenders.Any(), "Only GraphUserManagementService may use Microsoft Graph: " + string.Join(", ", offenders.Select(t => t.FullName)));
+    }
+
+    [Fact]
+    public void Web_reaches_the_database_only_through_use_cases()
+    {
+        // Pages and the provisioning worker call use cases; none opens the data port or the DbContext.
+        var result = Types.InAssembly(Web).ShouldNot()
+            .HaveDependencyOnAny(typeof(IConsentIdentityDb).FullName!, typeof(IConsentIdentityDbFactory).FullName!, typeof(ConsentIdentityDbContext).FullName!)
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe(result));
+    }
+
     [Fact]
     public void SharedLibrary_references_neither_Core_nor_Infrastructure()
     {

@@ -63,4 +63,132 @@ public class DeveloperRegistrationTests
             new[] { DeveloperRegistration.NameField, DeveloperRegistration.EmailField }.Order(),
             result.Errors.Select(e => e.Code).Order());
     }
+
+    private static DeveloperRegistration Requested()
+    {
+        var registration = DeveloperRegistration.Create("Ada", "ada@example.com").Value;
+        Assert.False(registration.RequestProvisioning().IsError);
+        return registration;
+    }
+
+    private static DeveloperRegistration Invited()
+    {
+        var registration = Requested();
+        registration.MarkInvited("guest-id");
+        return registration;
+    }
+
+    [Fact]
+    public void Provisioning_can_be_requested_for_a_pending_registration()
+    {
+        var registration = DeveloperRegistration.Create("Ada", "ada@example.com").Value;
+
+        var result = registration.RequestProvisioning();
+
+        Assert.False(result.IsError);
+        Assert.Equal(RegistrationStatus.ProvisioningRequested, registration.Status);
+    }
+
+    [Fact]
+    public void Provisioning_can_be_requested_again_after_a_failure_and_the_old_error_is_cleared()
+    {
+        var registration = Requested();
+        registration.MarkProvisioningFailed("Graph was down.");
+
+        var result = registration.RequestProvisioning();
+
+        Assert.False(result.IsError);
+        Assert.Equal(RegistrationStatus.ProvisioningRequested, registration.Status);
+        Assert.Null(registration.ProvisioningError);
+        Assert.Equal(1, registration.ProvisioningAttempts);
+    }
+
+    [Fact]
+    public void Provisioning_cannot_be_requested_twice()
+    {
+        var registration = Requested();
+
+        var error = Assert.Single(registration.RequestProvisioning().Errors);
+
+        Assert.Equal(ErrorType.Conflict, error.Type);
+        Assert.Equal(DeveloperRegistration.StatusField, error.Code);
+    }
+
+    [Fact]
+    public void Provisioning_cannot_be_requested_once_invited()
+    {
+        var registration = Invited();
+
+        Assert.True(registration.RequestProvisioning().IsError);
+        Assert.Equal(RegistrationStatus.Invited, registration.Status);
+    }
+
+    [Fact]
+    public void Marking_invited_records_the_guest_object_id_and_the_attempt()
+    {
+        var registration = Invited();
+
+        Assert.Equal(RegistrationStatus.Invited, registration.Status);
+        Assert.Equal("guest-id", registration.EntraObjectId);
+        Assert.Equal(1, registration.ProvisioningAttempts);
+    }
+
+    [Fact]
+    public void Marking_failed_keeps_a_reason_truncated_to_the_column()
+    {
+        var registration = Requested();
+
+        registration.MarkProvisioningFailed(new string('x', DeveloperRegistration.ProvisioningErrorMaxLength + 50));
+
+        Assert.Equal(RegistrationStatus.ProvisioningFailed, registration.Status);
+        Assert.Equal(DeveloperRegistration.ProvisioningErrorMaxLength, registration.ProvisioningError!.Length);
+        Assert.Equal(1, registration.ProvisioningAttempts);
+    }
+
+    [Fact]
+    public void An_invited_registration_is_activated_and_a_previous_activation_error_is_cleared()
+    {
+        var registration = Invited();
+        registration.RecordActivationFailure("Group not found.");
+
+        registration.MarkActivated();
+
+        Assert.Equal(RegistrationStatus.Activated, registration.Status);
+        Assert.Null(registration.ProvisioningError);
+        Assert.Equal("guest-id", registration.EntraObjectId);
+    }
+
+    [Fact]
+    public void A_failed_activation_keeps_the_registration_invited_for_the_next_attempt()
+    {
+        var registration = Invited();
+
+        registration.RecordActivationFailure("Group not found.");
+
+        Assert.Equal(RegistrationStatus.Invited, registration.Status);
+        Assert.Equal("Group not found.", registration.ProvisioningError);
+        Assert.Equal(2, registration.ProvisioningAttempts);
+    }
+
+    [Fact]
+    public void A_worker_outcome_on_a_registration_in_the_wrong_status_is_a_bug()
+    {
+        var pending = DeveloperRegistration.Create("Ada", "ada@example.com").Value;
+        var requested = Requested();
+
+        Assert.Throws<InvalidOperationException>(() => pending.MarkInvited("guest-id"));
+        Assert.Throws<InvalidOperationException>(() => pending.MarkProvisioningFailed("reason"));
+        Assert.Throws<InvalidOperationException>(() => requested.MarkActivated());
+        Assert.Throws<InvalidOperationException>(() => requested.RecordActivationFailure("reason"));
+    }
+
+    [Theory]
+    [InlineData(RegistrationStatus.Pending, true)]
+    [InlineData(RegistrationStatus.ProvisioningFailed, true)]
+    [InlineData(RegistrationStatus.ProvisioningRequested, false)]
+    [InlineData(RegistrationStatus.Invited, false)]
+    [InlineData(RegistrationStatus.Activated, false)]
+    [InlineData(RegistrationStatus.Invalid, false)]
+    public void CanRequestProvisioning_answers_for_each_status(RegistrationStatus status, bool expected) =>
+        Assert.Equal(expected, DeveloperRegistration.CanRequestProvisioning(status));
 }

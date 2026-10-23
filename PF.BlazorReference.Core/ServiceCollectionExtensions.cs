@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using PF.BlazorReference.Core.Features.Provisioning;
 using PF.BlazorReference.Core.Features.Registration;
 
 namespace PF.BlazorReference.Core;
@@ -10,6 +11,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddTransient<RegisterDeveloperUseCase>();
         services.AddTransient<ListRegistrationsUseCase>();
+        services.AddTransient<RequestEntraProvisioningUseCase>();
+        services.AddTransient<ProvisionDeveloperUseCase>();
+        services.AddTransient<ListProvisioningBacklogUseCase>();
         return services;
     }
 }

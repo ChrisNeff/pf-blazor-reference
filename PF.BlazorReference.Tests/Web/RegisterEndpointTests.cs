@@ -21,6 +21,7 @@ public sealed class RegisterEndpointTests : IClassFixture<RegisterEndpointTests.
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:ConsentIdentity", $"Data Source={databasePath}");
+            builder.UseSetting("Entra:UseFakeDirectory", "true");
             // High enough that the other tests never trip it; the rate limit tests lower it.
             builder.UseSetting("RateLimiting:Registration:PermitLimit", "1000");
         }
