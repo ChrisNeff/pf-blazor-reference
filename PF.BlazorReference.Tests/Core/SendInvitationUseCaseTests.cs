@@ -42,7 +42,7 @@ public class SendInvitationUseCaseTests
 
         var result = await Send(registration.Id);
 
-        Assert.Equal(new SendInvitationUseCase.Response(Sent: true, RegistrationStatus.Invited), result.Value);
+        Assert.Equal(new SendInvitationUseCase.Response(SendInvitationUseCase.Outcome.Invited), result.Value);
         Assert.Equal("guest-id", registration.EntraObjectId);
         Assert.Null(registration.ClaimedBy);
         await fake.Db.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -57,7 +57,8 @@ public class SendInvitationUseCaseTests
 
         var result = await Send(registration.Id);
 
-        Assert.Equal(RegistrationStatus.ProvisioningFailed, result.Value.Status);
+        Assert.Equal(SendInvitationUseCase.Outcome.Failed, result.Value.Outcome);
+        Assert.Equal(RegistrationStatus.ProvisioningFailed, registration.Status);
         Assert.Equal("Microsoft Graph could not be reached.", registration.ProvisioningError);
         Assert.Null(registration.ClaimedBy);
     }
@@ -70,7 +71,7 @@ public class SendInvitationUseCaseTests
 
         var result = await Send(registration.Id, owner: "host-a");
 
-        Assert.False(result.Value.Sent);
+        Assert.Equal(SendInvitationUseCase.Outcome.Skipped, result.Value.Outcome);
         Assert.Empty(directory.ReceivedCalls());
         Assert.Equal("host-b", registration.ClaimedBy);
     }
@@ -84,7 +85,7 @@ public class SendInvitationUseCaseTests
 
         var result = await Send(registration.Id);
 
-        Assert.False(result.Value.Sent);
+        Assert.Equal(SendInvitationUseCase.Outcome.Skipped, result.Value.Outcome);
         Assert.Empty(directory.ReceivedCalls());
     }
 
@@ -115,7 +116,7 @@ public class SendInvitationUseCaseTests
 
         var result = await Send(registration.Id);
 
-        Assert.False(result.Value.Sent);
+        Assert.Equal(SendInvitationUseCase.Outcome.Skipped, result.Value.Outcome);
         Assert.Empty(directory.ReceivedCalls());
         await fake.Db.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }

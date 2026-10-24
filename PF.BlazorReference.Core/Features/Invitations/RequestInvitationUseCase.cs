@@ -16,7 +16,7 @@ public sealed class RequestInvitationUseCase(IConsentIdentityDbFactory dbFactory
 
     public sealed record Request(Guid RegistrationId);
 
-    public sealed record Response(RegistrationStatus Status);
+    public sealed record Response;
 
     public async Task<ErrorOr<RequestInvitationUseCase.Response>> Handle(
         RequestInvitationUseCase.Request request, CancellationToken ct)
@@ -45,6 +45,6 @@ public sealed class RequestInvitationUseCase(IConsentIdentityDbFactory dbFactory
         // is not a failure: the worker's sweep finds the row.
         queue.TryEnqueue(registration.Id);
 
-        return new RequestInvitationUseCase.Response(registration.Status);
+        return new RequestInvitationUseCase.Response();
     }
 }

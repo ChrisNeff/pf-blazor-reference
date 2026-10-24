@@ -29,7 +29,7 @@ A change is done when the build is clean and all tests pass, architecture tests 
 
 ## Use cases and ports
 
-Slices mirror by folder name: `Web/Features/<Feature>/` holds the container page and its presentation components, `Core/Features/<Feature>/` holds its use cases. Background work follows the same shape: `Web/BackgroundServices/<Worker>/` holds a worker, which calls use cases from `Core/Features/<Feature>/` (see Background services).
+Slices mirror by folder name: `Web/Features/<Feature>/` holds the container page, its presentation components (`Components/`) and their view models (`ViewModels/`); `Core/Features/<Feature>/` holds its use cases. Background work follows the same shape: `Web/BackgroundServices/<Worker>/` holds a worker, which calls use cases from `Core/Features/<Feature>/` (see Background services).
 
 Core is laid out by role:
 
@@ -39,6 +39,8 @@ Core is laid out by role:
 - The Core root holds the ports and shared abstractions, one type per file.
 
 A **use case** is one class named `<Verb><Noun>UseCase`, in `Core/Features/<Feature>/<Name>UseCase.cs`, implementing `IUseCase<TRequest, TResult>`. It nests its own `Request` and `Response` records. There is no mediator package. Register each use case with one line in `AddCore()`. Pages inject the concrete use-case class. An architecture test requires every type under `Features/` to be a `*UseCase`.
+
+**A use case's request and response are its contract, and never expose an entity.** Results use the use case's own nested types: records (`ListRegistrationsUseCase.Item`), enums mapped from the domain inside the use case (`ListRegistrationsUseCase.Status`, `SendInvitationUseCase.Outcome`), and the domain's answers as flags (`Item.CanRequestInvitation`). Constants a caller needs are republished on the use case (`RegisterDeveloperUseCase.NameMaxLength`). Web never references `Core.Entities`; an architecture test enforces it, so a change to the domain model stops at the use case.
 
 **Nested request and response records are always referenced through their container class**, including inside the container itself: `RegisterDeveloperUseCase.Request`, `ListRegistrationsUseCase.Item`. Never rely on the bare nested name, even where the compiler allows it, so a reader can see where a type comes from without scrolling.
 
@@ -117,11 +119,13 @@ ProvisioningRequested → ProvisioningFailed (the grid's button retries)
 - The layout is static. The only interactive piece is `NavIsland` (app bar and drawer), which also hosts the MudBlazor providers.
 - Nav items are passed in by the app, as `NavItem[]`.
 - Parameters of an interactive component (any component with a `@rendermode`, including a routable page) must be concrete serializable types: primitives, enums, records, arrays or `List<T>`. No interfaces, delegates, `RenderFragment` or `EventCallback`. An architecture test enforces this and explains why when it fails.
-- Components split into **container** and **presentation**.
-  - A **container** is the routable page. It owns the route, the render mode, state, and the use-case calls, and passes data down. Only containers inject services.
+- Components split into **container** and **presentation** (Dan Abramov's names for "smart" and "dumb" components: containers deal with how things work, presentation components with how things look).
+  - A **container** is the routable page. It owns the route, the render mode, state, and the use-case calls. It maps each use-case result to view models and passes those down. Only containers inject services.
   - A **presentation** component takes `[Parameter]` in, raises `EventCallback` out, and has no `@inject` / `[Inject]`. They live in `Features/<Feature>/Components/` or in SharedLibrary. An architecture test enforces this.
-- `.razor` holds markup; `.razor.cs` is the partial class with `[Inject]`, state and handlers.
-- Page state is a page-local record, for example `RegistrationsState(Items, Loading, Error)`.
+  - A presentation component **binds view models, never Core types**: no use-case contract, no entity, no domain rule. An architecture test enforces this for `Features/<Feature>/Components/` (and the SharedLibrary rule keeps the library off Core entirely). The only state it keeps is UI state, such as a search box or an open drawer.
+- **View models** live in `Features/<Feature>/ViewModels/`, one record per thing a presentation component shows, with everything already decided: labels, colors, hints, enabled flags (`RegistrationRow`). A static `From(...)` builds one from a use-case result. Wording and styling are presentation decisions made there; business decisions arrive from the use case as flags, never recomputed. View models are unit-tested as plain data (`Tests/Web/Features/`).
+- `.razor` holds markup only; `.razor.cs` is the partial class with `[Parameter]`, `[Inject]`, state and handlers. No `@code` or `@functions` block, in Web or SharedLibrary; a test reads the files and enforces it.
+- Page state is a page-local record of view models, for example `RegistrationsState(Rows, Loading, Error)`.
 - Static pages use `EditForm` with a `FormName` and `[SupplyParameterFromForm]`. The posted field names are prefixed by the presentation component's `Model` parameter, so the container binds with `Name = RegistrationForm.FieldPrefix`.
 - MudBlazor inputs need a circuit, so static pages use plain HTML inputs styled by CSS tokens. Interactive pages use MudBlazor freely.
 - Branding is CSS tokens in `SharedLibrary/wwwroot/pf-tokens.css`, not a C# `MudTheme` class.
@@ -147,7 +151,7 @@ ASP.NET Core's rate limiter, scoped to **public, unauthenticated write paths onl
 - **What that cannot prove.** LINQ over a list is not SQL, so the substitute says nothing about query translation, mappings, constraints or the interceptor. Those are tested against a real in-memory SQLite database built from `schema.sql` (`SqliteTestDatabase`) in `Tests/Infrastructure/`: the schema mappings, the unique-index translation, the audit interceptor, and the query extension methods. Use SQLite there, never in a use-case test.
 - Use `FakeTimeProvider` for time. Code that needs the time takes a `TimeProvider`.
 - HTTP-level tests use `WebApplicationFactory<Program>` in the `Testing` environment (which skips seeding) against a temporary database file.
-- Architecture tests use NetArchTest plus reflection for the presentation-component and DI-registration rules.
+- Architecture tests use NetArchTest plus reflection for the presentation-component and DI-registration rules, and read the `.razor` files for the markup-only rule.
 - The workers are tested with the real queue and use cases over `FakeConsentIdentityDb` and a substitute `IUserManagementService` (`Tests/Web/BackgroundServices/`), with `FakeTimeProvider` driving the schedules. The claim and the concurrency token are tested against real SQLite, including two contexts that read the same version (`DeveloperRegistrationDbExtensionsTests`). No test calls Graph: its pure parts (the guest lookup filter) and its registration are tested, and the request itself is checked by hand against a test tenant.
 - There are no component tests (bUnit): the toast and interactive behaviour are checked by hand.
 

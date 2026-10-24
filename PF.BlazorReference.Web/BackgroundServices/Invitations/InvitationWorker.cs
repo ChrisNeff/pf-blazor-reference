@@ -40,8 +40,17 @@ public sealed class InvitationWorker(
                 await InScopeAsync<SendInvitationUseCase>(async send =>
                 {
                     var result = await send.Handle(new SendInvitationUseCase.Request(id, ClaimOwner.Current), stoppingToken);
-                    if (!result.IsError && result.Value.Sent)
-                        Logger.LogInformation("Registration {RegistrationId} is now {Status}.", id, result.Value.Status);
+                    if (result.IsError)
+                        return;
+                    switch (result.Value.Outcome)
+                    {
+                        case SendInvitationUseCase.Outcome.Invited:
+                            Logger.LogInformation("Registration {RegistrationId} was invited.", id);
+                            break;
+                        case SendInvitationUseCase.Outcome.Failed:
+                            Logger.LogWarning("Inviting registration {RegistrationId} failed; the reason is on the row and the grid offers a retry.", id);
+                            break;
+                    }
                 }, $"sending the invitation for registration {id}", stoppingToken);
             }
         }

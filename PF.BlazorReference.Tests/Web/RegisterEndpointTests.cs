@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Features.Registration;
 
 namespace PF.BlazorReference.Tests.Web;
@@ -105,7 +104,7 @@ public sealed class RegisterEndpointTests : IClassFixture<RegisterEndpointTests.
 
         var list = factory.Services.GetRequiredService<ListRegistrationsUseCase>();
         var item = (await list.Handle(new ListRegistrationsUseCase.Request(), CancellationToken.None)).Value.Items.Single(i => i.Id == id);
-        Assert.Equal(RegistrationStatus.Submitted, item.Status);
+        Assert.Equal(ListRegistrationsUseCase.Status.Submitted, item.Status);
     }
 
     [Fact]

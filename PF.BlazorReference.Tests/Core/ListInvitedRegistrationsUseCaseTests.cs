@@ -1,18 +1,15 @@
-using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Features.Invitations;
 using PF.BlazorReference.Tests.Support;
 
 namespace PF.BlazorReference.Tests.Core;
 
 /// <summary>Unit tests: the data port and its factory are substitutes, so no database is involved.</summary>
-public class ListRegistrationIdsUseCaseTests
+public class ListInvitedRegistrationsUseCaseTests
 {
     private readonly FakeConsentIdentityDb fake = new();
 
-    [Theory]
-    [InlineData(RegistrationStatus.ProvisioningRequested)]
-    [InlineData(RegistrationStatus.Invited)]
-    public async Task Lists_only_the_registrations_in_the_requested_status(RegistrationStatus status)
+    [Fact]
+    public async Task Lists_only_the_invited_registrations()
     {
         var submitted = FakeConsentIdentityDb.Registration("Submitted", "submitted@example.com");
         var requested = FakeConsentIdentityDb.Registration("Requested", "requested@example.com");
@@ -22,10 +19,9 @@ public class ListRegistrationIdsUseCaseTests
         invited.MarkInvited("guest-1");
         fake.Registrations.AddRange([submitted, requested, invited]);
 
-        var result = await new ListRegistrationIdsUseCase(fake.Factory)
-            .Handle(new ListRegistrationIdsUseCase.Request(status), CancellationToken.None);
+        var result = await new ListInvitedRegistrationsUseCase(fake.Factory)
+            .Handle(new ListInvitedRegistrationsUseCase.Request(), CancellationToken.None);
 
-        var expected = status == RegistrationStatus.Invited ? invited : requested;
-        Assert.Equal([expected.Id], result.Value.RegistrationIds);
+        Assert.Equal([invited.Id], result.Value.RegistrationIds);
     }
 }

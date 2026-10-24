@@ -1,9 +1,8 @@
 @namespace PF.BlazorReference.Web.Features.Registration.Components
-@using PF.BlazorReference.Core.Entities
-@using PF.BlazorReference.Core.Features.Registration
+@using PF.BlazorReference.Web.Features.Registration.ViewModels
 
-@* Presentation component: sorting and filtering are local view state, not data access. *@
-<MudDataGrid T="ListRegistrationsUseCase.Item" Items="Items" SortMode="SortMode.Multiple" QuickFilter="MatchesSearch"
+@* Presentation component: binds a view model, raises OnInvite; sorting and the search box are local UI state. *@
+<MudDataGrid T="RegistrationRow" Items="Rows" SortMode="SortMode.Multiple" QuickFilter="MatchesSearch"
              RowClassFunc="RowClass" Hover="true" Dense="true">
     <ToolBarContent>
         <MudTextField @bind-Value="search" Placeholder="Search name or email" Immediate="true"
@@ -12,24 +11,24 @@
     <Columns>
         <PropertyColumn Property="r => r.Name" Title="Name" />
         <PropertyColumn Property="r => r.Email" Title="Email" />
-        <TemplateColumn T="ListRegistrationsUseCase.Item" Title="Status" SortBy="r => r.Status">
+        <TemplateColumn T="RegistrationRow" Title="Status" SortBy="r => r.StatusLabel">
             <CellTemplate>
-                <MudTooltip Text="@StatusHint(context.Item)" Disabled="@(StatusHint(context.Item) is null)">
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@StatusColor(context.Item.Status)">
-                        @StatusLabel(context.Item.Status)
+                <MudTooltip Text="@context.Item.StatusHint" Disabled="@(context.Item.StatusHint is null)">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@context.Item.StatusColor">
+                        @context.Item.StatusLabel
                     </MudChip>
                 </MudTooltip>
             </CellTemplate>
         </TemplateColumn>
         <PropertyColumn Property="r => r.CreatedAtUtc" Title="Created (UTC)" Format="yyyy-MM-dd HH:mm" />
-        @if (CanProvision)
+        @if (ShowInvite)
         {
-            <TemplateColumn T="ListRegistrationsUseCase.Item" Title="Entra" Sortable="false" Filterable="false">
+            <TemplateColumn T="RegistrationRow" Title="Entra" Sortable="false" Filterable="false">
                 <CellTemplate>
                     <MudButton Size="Size.Small" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Send"
-                               Disabled="@(!DeveloperRegistration.CanRequestProvisioning(context.Item.Status) || context.Item.Id == BusyId)"
-                               OnClick="@(() => OnProvision.InvokeAsync(context.Item.Id))">
-                        @(context.Item.Status == RegistrationStatus.ProvisioningFailed ? "Retry invite" : "Invite")
+                               Disabled="@(!context.Item.CanInvite || context.Item.Id == CurrentRecordProcessingId)"
+                               OnClick="@(() => OnInvite.InvokeAsync(context.Item.Id))">
+                        @context.Item.InviteLabel
                     </MudButton>
                 </CellTemplate>
             </TemplateColumn>
@@ -37,57 +36,6 @@
     </Columns>
     <NoRecordsContent>No registrations yet.</NoRecordsContent>
     <PagerContent>
-        <MudDataGridPager T="ListRegistrationsUseCase.Item" />
+        <MudDataGridPager T="RegistrationRow" />
     </PagerContent>
 </MudDataGrid>
-
-@code {
-    private string? search;
-
-    [Parameter, EditorRequired] public IReadOnlyList<ListRegistrationsUseCase.Item> Items { get; set; } = [];
-
-    /// <summary>The row to highlight, such as the one just registered.</summary>
-    [Parameter] public Guid? HighlightId { get; set; }
-
-    /// <summary>Whether to show the button that requests an Entra guest invitation for a row.</summary>
-    [Parameter] public bool CanProvision { get; set; }
-
-    /// <summary>The row whose request is in flight; its button is disabled.</summary>
-    [Parameter] public Guid? BusyId { get; set; }
-
-    /// <summary>Raised with the registration id when its Entra invitation is requested.</summary>
-    [Parameter] public EventCallback<Guid> OnProvision { get; set; }
-
-    private bool MatchesSearch(ListRegistrationsUseCase.Item item) =>
-        string.IsNullOrWhiteSpace(search)
-        || item.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
-        || item.Email.Contains(search, StringComparison.OrdinalIgnoreCase);
-
-    private string RowClass(ListRegistrationsUseCase.Item item, int index) =>
-        item.Id == HighlightId ? "pf-row-highlight" : "";
-
-    private static string StatusLabel(RegistrationStatus status) => status switch
-    {
-        RegistrationStatus.ProvisioningRequested => "Sending invite",
-        RegistrationStatus.ProvisioningFailed => "Failed",
-        _ => status.ToString(),
-    };
-
-    private static Color StatusColor(RegistrationStatus status) => status switch
-    {
-        RegistrationStatus.ProvisioningRequested => Color.Info,
-        RegistrationStatus.Invited => Color.Primary,
-        RegistrationStatus.Activated => Color.Success,
-        RegistrationStatus.ProvisioningFailed => Color.Error,
-        _ => Color.Default,
-    };
-
-    private static string? StatusHint(ListRegistrationsUseCase.Item item) => item.Status switch
-    {
-        // An activation failure keeps the row Invited, so the reason can show there too.
-        RegistrationStatus.ProvisioningFailed or RegistrationStatus.Invited when item.ProvisioningError is not null => item.ProvisioningError,
-        RegistrationStatus.Invited => "Invitation sent. Waiting for the invitee to redeem it.",
-        RegistrationStatus.ProvisioningRequested => "The invitation is being sent in the background.",
-        _ => null,
-    };
-}

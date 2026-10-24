@@ -57,7 +57,9 @@ Web ──────────► Core ◄────────── Inf
 | Database-first schema, hand-written mappings | `Infrastructure/Database/schema.sql`, `Infrastructure/Configurations/` |
 | Unique email: pre-check plus index plus race handling | `RegisterDeveloperUseCase.cs`, `schema.sql`, `Tests/Core/RegisterDeveloperUseCaseTests.cs` |
 | Audit timestamps from an interceptor using `TimeProvider` | `Core/Entities/IAuditable.cs`, `Infrastructure/Interceptors/AuditTimestampInterceptor.cs` |
-| Container and presentation components | `Web/Features/Registration/*Page.razor(.cs)`, `.../Components/` |
+| Container and presentation components; presentation binds view models, never Core types | `Web/Features/Registration/*Page.razor(.cs)`, `.../Components/`, `.../ViewModels/`, `Tests/Architecture/ArchitectureTests.cs` |
+| Use-case results are contracts: Web never references Core entities | `Core/Features/Registration/ListRegistrationsUseCase.cs` (`Status`, `CanRequestInvitation`), `Tests/Architecture/ArchitectureTests.cs` |
+| `.razor` is markup only; code lives in `.razor.cs` | every component, enforced in `Tests/Architecture/ArchitectureTests.cs` |
 | Form record with annotations, rules repeated in Core | `Web/Features/Registration/RegisterDeveloperForm.cs` |
 | Static SSR by default, one interactive island | `Web/Components/Routes.razor`, `SharedLibrary/NavIsland.razor` |
 | Shell takes nav items from the app, as an array | `Web/Components/Layout/MainLayout.razor`, `SharedLibrary/AppShell.razor` |

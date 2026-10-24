@@ -34,7 +34,8 @@ public class ListRegistrationsUseCaseTests
 
         var item = Assert.Single((await List()).Value.Items);
 
-        Assert.Equal(new ListRegistrationsUseCase.Item(registration.Id, "Ada", "ada@example.com", RegistrationStatus.Submitted, created, ProvisioningError: null), item);
+        Assert.Equal(new ListRegistrationsUseCase.Item(registration.Id, "Ada", "ada@example.com", ListRegistrationsUseCase.Status.Submitted, created,
+            CanRequestInvitation: true, ProvisioningError: null), item);
     }
 
     [Fact]
@@ -44,5 +45,33 @@ public class ListRegistrationsUseCaseTests
 
         Assert.False(result.IsError);
         Assert.Empty(result.Value.Items);
+    }
+
+    [Fact]
+    public async Task Maps_each_domain_status_to_the_contract_with_the_domains_answer_on_inviting()
+    {
+        var submitted = FakeConsentIdentityDb.Registration("Submitted", "submitted@example.com");
+        var requested = FakeConsentIdentityDb.Registration("Requested", "requested@example.com");
+        requested.RequestProvisioning();
+        var invited = FakeConsentIdentityDb.Registration("Invited", "invited@example.com");
+        invited.RequestProvisioning();
+        invited.MarkInvited("guest-1");
+        var activated = FakeConsentIdentityDb.Registration("Activated", "activated@example.com");
+        activated.RequestProvisioning();
+        activated.MarkInvited("guest-2");
+        activated.MarkActivated();
+        var failed = FakeConsentIdentityDb.Registration("Failed", "failed@example.com");
+        failed.RequestProvisioning();
+        failed.MarkProvisioningFailed("Graph was down.");
+        fake.Registrations.AddRange([submitted, requested, invited, activated, failed]);
+
+        var items = (await List()).Value.Items.ToDictionary(i => i.Name);
+
+        Assert.Equal((ListRegistrationsUseCase.Status.Submitted, true), (items["Submitted"].Status, items["Submitted"].CanRequestInvitation));
+        Assert.Equal((ListRegistrationsUseCase.Status.InvitationRequested, false), (items["Requested"].Status, items["Requested"].CanRequestInvitation));
+        Assert.Equal((ListRegistrationsUseCase.Status.Invited, false), (items["Invited"].Status, items["Invited"].CanRequestInvitation));
+        Assert.Equal((ListRegistrationsUseCase.Status.Activated, false), (items["Activated"].Status, items["Activated"].CanRequestInvitation));
+        Assert.Equal((ListRegistrationsUseCase.Status.InvitationFailed, true), (items["Failed"].Status, items["Failed"].CanRequestInvitation));
+        Assert.Equal("Graph was down.", items["Failed"].ProvisioningError);
     }
 }

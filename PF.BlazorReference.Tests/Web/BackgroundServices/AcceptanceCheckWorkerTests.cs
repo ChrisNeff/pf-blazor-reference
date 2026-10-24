@@ -39,7 +39,7 @@ public sealed class AcceptanceCheckWorkerTests : IAsyncDisposable
             .AddSingleton(directory)
             .AddSingleton<TimeProvider>(time)
             .AddTransient<ActivateAcceptedGuestUseCase>()
-            .AddTransient<ListRegistrationIdsUseCase>()
+            .AddTransient<ListInvitedRegistrationsUseCase>()
             .BuildServiceProvider();
 
         worker = new AcceptanceCheckWorker(services.GetRequiredService<IServiceScopeFactory>(), time,

@@ -91,6 +91,59 @@ public class ArchitectureTests
         Assert.True(result.IsSuccessful, Describe(result));
     }
 
+    private const string CoreEntitiesNs = CoreNs + ".Entities";
+
+    [Fact]
+    public void Web_never_references_Core_entities()
+    {
+        // Use cases are the contract: they expose their own nested types (Item, Status, Outcome), never an
+        // entity, so a change to the domain model does not ripple into pages, components or workers.
+        var result = Types.InAssembly(Web).ShouldNot().HaveDependencyOn(CoreEntitiesNs).GetResult();
+
+        Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    [Fact]
+    public void Presentation_components_depend_on_nothing_in_Core()
+    {
+        // Presentation components take view models (Features/<Feature>/ViewModels); the container maps
+        // use-case results into them. SharedLibrary is covered by its own rule above.
+        var presentation = Types.InAssembly(Web)
+            .That().ResideInNamespaceEndingWith(".Components")
+            .And().ResideInNamespaceContaining(".Features.");
+
+        // Guard against passing vacuously if the folder convention changes.
+        Assert.Contains(presentation.GetTypes(), t => t == typeof(RegistrationTable));
+
+        var result = presentation.ShouldNot().HaveDependencyOn(CoreNs).GetResult();
+        Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    [Fact]
+    public void Razor_files_hold_markup_only()
+    {
+        // The C# of a component lives in its .razor.cs partial class: [Parameter], [Inject], state, handlers.
+        var root = RepositoryRoot();
+        var offenders = new[] { "PF.BlazorReference.Web", "PF.BlazorReference.SharedLibrary" }
+            .SelectMany(project => Directory.EnumerateFiles(Path.Combine(root, project), "*.razor", SearchOption.AllDirectories))
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
+                           && !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .Where(file => File.ReadLines(file).Any(line => line.TrimStart().StartsWith("@code", StringComparison.Ordinal)
+                                                            || line.TrimStart().StartsWith("@functions", StringComparison.Ordinal)))
+            .Select(file => Path.GetRelativePath(root, file))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Move @code into a .razor.cs partial class: " + string.Join(", ", offenders));
+    }
+
+    private static string RepositoryRoot()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+            if (File.Exists(Path.Combine(dir.FullName, "PF.BlazorReference.slnx")))
+                return dir.FullName;
+        throw new InvalidOperationException("PF.BlazorReference.slnx not found above " + AppContext.BaseDirectory);
+    }
+
     private const string BackgroundServicesNs = WebNs + ".BackgroundServices";
 
     [Fact]

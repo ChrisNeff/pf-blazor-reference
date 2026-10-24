@@ -28,7 +28,7 @@ public class RequestInvitationUseCaseTests
 
         var result = await Request(registration.Id);
 
-        Assert.Equal(RegistrationStatus.ProvisioningRequested, result.Value.Status);
+        Assert.False(result.IsError);
         Assert.Equal(RegistrationStatus.ProvisioningRequested, registration.Status);
         Received.InOrder(() =>
         {

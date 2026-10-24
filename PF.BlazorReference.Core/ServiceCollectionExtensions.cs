@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<RequestInvitationUseCase>();
         services.AddTransient<SendInvitationUseCase>();
         services.AddTransient<ActivateAcceptedGuestUseCase>();
-        services.AddTransient<ListRegistrationIdsUseCase>();
+        services.AddTransient<ListInvitedRegistrationsUseCase>();
         services.AddTransient<RequeueInvitationRequestsUseCase>();
         return services;
     }

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Features.Invitations;
 
 namespace PF.BlazorReference.Web.BackgroundServices.AcceptanceCheck;
@@ -20,9 +19,9 @@ public sealed class AcceptanceCheckWorker(
     protected override async Task RunOnceAsync(CancellationToken stoppingToken)
     {
         IReadOnlyList<Guid> invited = [];
-        await InScopeAsync<ListRegistrationIdsUseCase>(async list =>
+        await InScopeAsync<ListInvitedRegistrationsUseCase>(async list =>
         {
-            var result = await list.Handle(new ListRegistrationIdsUseCase.Request(RegistrationStatus.Invited), stoppingToken);
+            var result = await list.Handle(new ListInvitedRegistrationsUseCase.Request(), stoppingToken);
             if (!result.IsError)
                 invited = result.Value.RegistrationIds;
         }, "listing invited registrations", stoppingToken);

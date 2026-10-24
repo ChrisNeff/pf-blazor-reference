@@ -19,11 +19,23 @@ public sealed class SendInvitationUseCase(
     /// <param name="ClaimOwner">Who is working the row: the host and process, for the claim.</param>
     public sealed record Request(Guid RegistrationId, string ClaimOwner);
 
-    /// <param name="Sent">False when there was nothing to do: not requested any more, or claimed by another host.</param>
-    /// <param name="Status">The status afterwards, when <paramref name="Sent"/>.</param>
-    public sealed record Response(bool Sent, RegistrationStatus? Status);
+    public enum Outcome
+    {
+        /// <summary>The default value: never returned.</summary>
+        Invalid = 0,
 
-    private static readonly SendInvitationUseCase.Response Skipped = new(Sent: false, Status: null);
+        /// <summary>Not requested any more, or claimed by another host.</summary>
+        Skipped,
+
+        Invited,
+
+        /// <summary>Entra refused or failed; the reason is on the row and the grid offers a retry.</summary>
+        Failed,
+    }
+
+    public sealed record Response(SendInvitationUseCase.Outcome Outcome);
+
+    private static readonly SendInvitationUseCase.Response Skipped = new(SendInvitationUseCase.Outcome.Skipped);
 
     public async Task<ErrorOr<SendInvitationUseCase.Response>> Handle(
         SendInvitationUseCase.Request request, CancellationToken ct)
@@ -35,14 +47,17 @@ public sealed class SendInvitationUseCase(
         if (registration is null)
             return Skipped;
 
+        SendInvitationUseCase.Outcome outcome;
         try
         {
             registration.MarkInvited(await userManagement.InviteGuestAsync(registration, ct));
+            outcome = SendInvitationUseCase.Outcome.Invited;
         }
         catch (UserManagementException ex)
         {
             // An expected failure: recorded on the row so it can be seen and requested again.
             registration.MarkProvisioningFailed(ex.Message);
+            outcome = SendInvitationUseCase.Outcome.Failed;
         }
 
         try
@@ -56,6 +71,6 @@ public sealed class SendInvitationUseCase(
             return Skipped;
         }
 
-        return new SendInvitationUseCase.Response(Sent: true, registration.Status);
+        return new SendInvitationUseCase.Response(outcome);
     }
 }
