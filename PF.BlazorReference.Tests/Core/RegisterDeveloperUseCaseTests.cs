@@ -26,7 +26,9 @@ public class RegisterDeveloperUseCaseTests
         Assert.Equal(result.Value.RegistrationId, added.Id);
         Assert.Equal("Ada Lovelace", added.Name);
         Assert.Equal("ada@example.com", added.Email);
-        Assert.Equal(RegistrationStatus.Pending, added.Status);
+        // Recorded only: nothing goes to Entra until the invitation is requested from the grid.
+        Assert.Equal(RegistrationStatus.Submitted, added.Status);
+        Assert.Null(added.EntraObjectId);
         await fake.Db.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

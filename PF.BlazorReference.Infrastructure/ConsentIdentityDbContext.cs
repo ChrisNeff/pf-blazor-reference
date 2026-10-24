@@ -26,6 +26,11 @@ public sealed class ConsentIdentityDbContext(DbContextOptions<ConsentIdentityDbC
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // The row's Version is not the one this context read: someone else saved it first.
+            throw new ConcurrencyConflictException(ex);
+        }
         catch (DbUpdateException ex) when (ex.InnerException is SqliteException { SqliteExtendedErrorCode: SqliteConstraintUnique })
         {
             // Translate the provider failure so Core never inspects a provider exception.

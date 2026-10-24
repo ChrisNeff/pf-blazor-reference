@@ -17,6 +17,16 @@ public static class DatabaseInitializer
 
         await using var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync(ct);
+
+        // Write-ahead logging, so readers do not block a writer. Without it, two app processes sharing
+        // the file (a stand-in for several hosts) refuse each other's writes with "database is locked".
+        // It is a property of the file, so setting it once at startup is enough. SQL Server needs none of this.
+        await using (var wal = connection.CreateCommand())
+        {
+            wal.CommandText = "PRAGMA journal_mode=WAL;";
+            await wal.ExecuteNonQueryAsync(ct);
+        }
+
         await ApplyAsync(connection, seed, ct);
     }
 

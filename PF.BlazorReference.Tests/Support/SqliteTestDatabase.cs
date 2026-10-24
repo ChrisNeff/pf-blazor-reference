@@ -28,7 +28,7 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
 
         options = new DbContextOptionsBuilder<ConsentIdentityDbContext>()
             .UseSqlite(connection)
-            .AddInterceptors(new AuditTimestampInterceptor(Time))
+            .AddInterceptors(new AuditTimestampInterceptor(Time), new VersionInterceptor())
             .Options;
     }
 

@@ -4,7 +4,10 @@ using PF.BlazorReference.Core.Extensions;
 
 namespace PF.BlazorReference.Core.Features.Registration;
 
-/// <summary>Registers a developer.</summary>
+/// <summary>
+/// Registers a developer: records the row as Submitted, and nothing else. Entra is not involved; the
+/// invitation is requested later from the registrations grid (<see cref="Invitations.RequestInvitationUseCase"/>).
+/// </summary>
 public sealed class RegisterDeveloperUseCase(IConsentIdentityDbFactory dbFactory)
     : IUseCase<RegisterDeveloperUseCase.Request, ErrorOr<RegisterDeveloperUseCase.Response>>
 {

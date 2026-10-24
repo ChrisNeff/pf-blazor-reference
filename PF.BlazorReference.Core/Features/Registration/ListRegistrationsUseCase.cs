@@ -13,7 +13,8 @@ public sealed class ListRegistrationsUseCase(IConsentIdentityDbFactory dbFactory
 
     public sealed record Response(IReadOnlyList<ListRegistrationsUseCase.Item> Items);
 
-    public sealed record Item(Guid Id, string Name, string Email, RegistrationStatus Status, DateTime CreatedAtUtc);
+    /// <param name="ProvisioningError">Why the last Entra call failed, if it did.</param>
+    public sealed record Item(Guid Id, string Name, string Email, RegistrationStatus Status, DateTime CreatedAtUtc, string? ProvisioningError);
 
     public async Task<ErrorOr<ListRegistrationsUseCase.Response>> Handle(
         ListRegistrationsUseCase.Request request, CancellationToken ct)
@@ -22,7 +23,7 @@ public sealed class ListRegistrationsUseCase(IConsentIdentityDbFactory dbFactory
 
         var items = await db.RegistrationsNewestFirst()
             .AsNoTracking()
-            .Select(r => new ListRegistrationsUseCase.Item(r.Id, r.Name, r.Email, r.Status, r.CreatedAtUtc))
+            .Select(r => new ListRegistrationsUseCase.Item(r.Id, r.Name, r.Email, r.Status, r.CreatedAtUtc, r.ProvisioningError))
             .ToListAsync(ct);
 
         return new ListRegistrationsUseCase.Response(items);

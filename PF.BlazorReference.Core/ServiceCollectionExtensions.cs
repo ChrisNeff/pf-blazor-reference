@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using PF.BlazorReference.Core.Features.Invitations;
 using PF.BlazorReference.Core.Features.Registration;
 
 namespace PF.BlazorReference.Core;
@@ -10,6 +11,11 @@ public static class ServiceCollectionExtensions
     {
         services.AddTransient<RegisterDeveloperUseCase>();
         services.AddTransient<ListRegistrationsUseCase>();
+        services.AddTransient<RequestInvitationUseCase>();
+        services.AddTransient<SendInvitationUseCase>();
+        services.AddTransient<ActivateAcceptedGuestUseCase>();
+        services.AddTransient<ListRegistrationIdsUseCase>();
+        services.AddTransient<RequeueInvitationRequestsUseCase>();
         return services;
     }
 }

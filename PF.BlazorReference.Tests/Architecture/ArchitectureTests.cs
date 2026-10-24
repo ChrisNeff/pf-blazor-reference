@@ -1,10 +1,12 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Hosting;
 using NetArchTest.Rules;
 using PF.BlazorReference.Core;
 using PF.BlazorReference.Infrastructure;
 using PF.BlazorReference.SharedLibrary;
+using PF.BlazorReference.Web.BackgroundServices;
 using PF.BlazorReference.Web.Features.Registration.Components;
 
 namespace PF.BlazorReference.Tests.Architecture;
@@ -48,6 +50,80 @@ public class ArchitectureTests
     {
         var result = Types.InAssembly(Infrastructure).ShouldNot()
             .HaveDependencyOnAny(SharedLibraryNs, WebNs)
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    private static readonly string[] GraphNamespaces = ["Microsoft.Graph", "Microsoft.Kiota", "Azure.Identity", "Azure.Core"];
+
+    [Fact]
+    public void Only_Infrastructure_references_Microsoft_Graph()
+    {
+        var offenders = new[] { Core, SharedLibrary, Web }
+            .SelectMany(assembly => Types.InAssembly(assembly).ShouldNot().HaveDependencyOnAny(GraphNamespaces).GetResult().FailingTypeNames ?? [])
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Microsoft Graph is used only in Infrastructure: " + string.Join(", ", offenders));
+    }
+
+    [Fact]
+    public void Within_Infrastructure_only_GraphUserManagementService_touches_the_Graph_client()
+    {
+        // The service builds its own GraphServiceClient and never hands it out. Its compiler-generated
+        // nested types (async state machines, lambdas) count as the service.
+        const string owner = "PF.BlazorReference.Infrastructure.UserManagement.GraphUserManagementService";
+        var users = Types.InAssembly(Infrastructure).That().HaveDependencyOnAny(GraphNamespaces).GetTypes().ToList();
+
+        Assert.Contains(users, t => t.FullName == owner); // guard against passing vacuously
+        var offenders = users.Where(t => t.FullName != owner && t.FullName?.StartsWith(owner + "+", StringComparison.Ordinal) != true);
+        Assert.True(!offenders.Any(), "Only GraphUserManagementService may use Microsoft Graph: " + string.Join(", ", offenders.Select(t => t.FullName)));
+    }
+
+    [Fact]
+    public void Web_reaches_the_database_only_through_use_cases()
+    {
+        // Pages and the provisioning worker call use cases; none opens the data port or the DbContext.
+        var result = Types.InAssembly(Web).ShouldNot()
+            .HaveDependencyOnAny(typeof(IConsentIdentityDb).FullName!, typeof(IConsentIdentityDbFactory).FullName!, typeof(ConsentIdentityDbContext).FullName!)
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe(result));
+    }
+
+    private const string BackgroundServicesNs = WebNs + ".BackgroundServices";
+
+    [Fact]
+    public void Background_services_are_workers_each_in_its_own_folder_under_BackgroundServices()
+    {
+        // The counterpart of Features/<Feature>/ for pages: Web/BackgroundServices/<Worker>/<Name>Worker.
+        var services = Web.GetTypes()
+            .Where(t => typeof(IHostedService).IsAssignableFrom(t) && !t.IsAbstract)
+            .ToList();
+
+        // Guard against passing vacuously.
+        Assert.Contains(services, t => t.Name == "InvitationWorker");
+        Assert.Contains(services, t => t.Name == "AcceptanceCheckWorker");
+
+        var misplaced = services.Where(t =>
+                !t.Name.EndsWith("Worker", StringComparison.Ordinal)
+                || t.Namespace is not { } ns
+                || !ns.StartsWith(BackgroundServicesNs + ".", StringComparison.Ordinal)
+                || ns.Count(c => c == '.') != BackgroundServicesNs.Count(c => c == '.') + 1)
+            .Select(t => t.FullName);
+        Assert.True(!misplaced.Any(),
+            "Background services must be named *Worker and live in Web/BackgroundServices/<Worker>/: " + string.Join(", ", misplaced));
+
+        var notPeriodic = services.Where(t => !typeof(PeriodicWorker).IsAssignableFrom(t)).Select(t => t.Name);
+        Assert.True(!notPeriodic.Any(), "Workers derive from PeriodicWorker, which owns scopes and failure handling: " + string.Join(", ", notPeriodic));
+    }
+
+    [Fact]
+    public void Workers_reach_only_Core_use_cases_and_ports()
+    {
+        // A worker decides when to call a use case and what to log; what happens to a row is Core's call.
+        var result = Types.InAssembly(Web).That().ResideInNamespaceStartingWith(BackgroundServicesNs)
+            .ShouldNot().HaveDependencyOnAny(InfrastructureNs, "Microsoft.EntityFrameworkCore", WebNs + ".Features")
             .GetResult();
 
         Assert.True(result.IsSuccessful, Describe(result));

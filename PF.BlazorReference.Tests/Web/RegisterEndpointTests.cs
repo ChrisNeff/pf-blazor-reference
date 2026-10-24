@@ -2,6 +2,9 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using PF.BlazorReference.Core.Entities;
+using PF.BlazorReference.Core.Features.Registration;
 
 namespace PF.BlazorReference.Tests.Web;
 
@@ -21,6 +24,7 @@ public sealed class RegisterEndpointTests : IClassFixture<RegisterEndpointTests.
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:ConsentIdentity", $"Data Source={databasePath}");
+            builder.UseSetting("Entra:UseFakeDirectory", "true");
             // High enough that the other tests never trip it; the rate limit tests lower it.
             builder.UseSetting("RateLimiting:Registration:PermitLimit", "1000");
         }
@@ -87,6 +91,21 @@ public sealed class RegisterEndpointTests : IClassFixture<RegisterEndpointTests.
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Matches(@"^/registrations\?registered=[0-9a-fA-F-]{36}$", response.Headers.Location!.PathAndQuery);
+    }
+
+    [Fact]
+    public async Task A_registration_is_only_recorded_as_submitted_and_nothing_is_sent_to_entra()
+    {
+        var client = NewClient();
+        var response = await client.PostAsync("/register", Form(await GetAntiforgeryToken(client), "Ada", "ada.submitted@example.com"));
+        var id = Guid.Parse(response.Headers.Location!.Query.Split('=')[1]);
+
+        // Give the hosted workers a moment; they must not pick a Submitted row up.
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+        var list = factory.Services.GetRequiredService<ListRegistrationsUseCase>();
+        var item = (await list.Handle(new ListRegistrationsUseCase.Request(), CancellationToken.None)).Value.Items.Single(i => i.Id == id);
+        Assert.Equal(RegistrationStatus.Submitted, item.Status);
     }
 
     [Fact]

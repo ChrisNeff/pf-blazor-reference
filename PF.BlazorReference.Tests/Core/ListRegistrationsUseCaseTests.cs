@@ -34,7 +34,7 @@ public class ListRegistrationsUseCaseTests
 
         var item = Assert.Single((await List()).Value.Items);
 
-        Assert.Equal(new ListRegistrationsUseCase.Item(registration.Id, "Ada", "ada@example.com", RegistrationStatus.Pending, created), item);
+        Assert.Equal(new ListRegistrationsUseCase.Item(registration.Id, "Ada", "ada@example.com", RegistrationStatus.Submitted, created, ProvisioningError: null), item);
     }
 
     [Fact]
