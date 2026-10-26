@@ -1,6 +1,7 @@
 using ErrorOr;
 using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Extensions;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Core.Features.Registration;
 

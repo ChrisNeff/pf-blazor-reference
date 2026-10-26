@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using PF.BlazorReference.Core;
 using PF.BlazorReference.Core.Entities;
+using PF.BlazorReference.Core.Ports.Directory;
 
 namespace PF.BlazorReference.Infrastructure.UserManagement;
 

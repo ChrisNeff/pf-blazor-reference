@@ -10,6 +10,8 @@ using PF.BlazorReference.Core.Features.Invitations;
 using PF.BlazorReference.Infrastructure.Queues;
 using PF.BlazorReference.Tests.Support;
 using PF.BlazorReference.Web.BackgroundServices.Invitations;
+using PF.BlazorReference.Core.Ports.Directory;
+using PF.BlazorReference.Core.Ports;
 
 namespace PF.BlazorReference.Tests.Web.BackgroundServices;
 

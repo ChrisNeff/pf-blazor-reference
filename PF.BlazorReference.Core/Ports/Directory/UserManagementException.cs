@@ -1,4 +1,4 @@
-namespace PF.BlazorReference.Core;
+namespace PF.BlazorReference.Core.Ports.Directory;
 
 /// <summary>
 /// Raised by the user-directory port when the directory rejects or fails a request. Infrastructure

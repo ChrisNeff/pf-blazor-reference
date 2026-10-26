@@ -5,6 +5,7 @@ using PF.BlazorReference.Core;
 using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Features.Registration;
 using PF.BlazorReference.Tests.Support;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Tests.Core;
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PF.BlazorReference.Core.Entities;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Core.Extensions;
 
@@ -30,17 +31,9 @@ public static class DeveloperRegistrationDbExtensions
         string owner, DateTime nowUtc, TimeSpan lease, CancellationToken ct = default)
     {
         var registration = await db.DeveloperRegistrations.FirstOrDefaultAsync(r => r.Id == registrationId, ct);
-        if (registration is null || registration.Status != expected || !registration.TryClaim(owner, nowUtc, lease))
+        if (registration is null || registration.Status != expected)
             return null;
 
-        try
-        {
-            await db.SaveChangesAsync(ct);
-            return registration;
-        }
-        catch (ConcurrencyConflictException)
-        {
-            return null;
-        }
+        return await db.TryClaimAndSaveAsync(registration, owner, nowUtc, lease, ct) ? registration : null;
     }
 }

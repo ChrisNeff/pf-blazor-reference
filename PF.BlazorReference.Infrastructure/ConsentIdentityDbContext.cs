@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PF.BlazorReference.Core;
 using PF.BlazorReference.Core.Entities;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Infrastructure;
 

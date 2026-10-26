@@ -1,4 +1,4 @@
-namespace PF.BlazorReference.Core;
+namespace PF.BlazorReference.Core.Ports;
 
 /// <summary>
 /// Wakes the invitation worker. A signal, not the record of the work: the registration row's status is.

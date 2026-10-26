@@ -8,6 +8,7 @@ using PF.BlazorReference.Infrastructure;
 using PF.BlazorReference.SharedLibrary;
 using PF.BlazorReference.Web.BackgroundServices;
 using PF.BlazorReference.Web.Features.Registration.Components;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Tests.Architecture;
 
@@ -230,6 +231,19 @@ public class ArchitectureTests
         var notUseCases = featureTypes.Where(t => !t.GetInterfaces().Any(
             i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IUseCase<,>))).Select(t => t.Name);
         Assert.True(!notUseCases.Any(), "Types named *UseCase must implement IUseCase<,>: " + string.Join(", ", notUseCases));
+    }
+
+    [Fact]
+    public void Core_root_holds_only_the_use_case_abstraction_and_registration()
+    {
+        // Ports and the exceptions they raise live in Core/Ports/<Port>/, so the root does not refill.
+        var rootTypes = Core.GetTypes()
+            .Where(t => t.Namespace == CoreNs && !t.IsNested && !t.Name.StartsWith('<'))
+            .Select(t => t.Name.Split('`')[0])
+            .Order()
+            .ToList();
+
+        Assert.Equal(["IUseCase", "ServiceCollectionExtensions"], rootTypes);
     }
 
     [Fact]

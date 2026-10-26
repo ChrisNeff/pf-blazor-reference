@@ -50,7 +50,7 @@ Web ──────────► Core ◄────────── Inf
 | Hand-rolled use case, `ErrorOr` results, nested records qualified by their container | `Core/IUseCase.cs`, `Core/Features/Registration/RegisterDeveloperUseCase.cs` |
 | Features are use cases; entities are separate | `Core/Features/`, `Core/Entities/`, `Tests/Architecture/ArchitectureTests.cs` |
 | Always-valid aggregate, no public setters | `Core/Entities/DeveloperRegistration.cs` |
-| Data port and per-call context factory | `Core/IConsentIdentityDb.cs`, `Core/IConsentIdentityDbFactory.cs`, `Infrastructure/ConsentIdentityDbFactory.cs` |
+| Data port and per-call context factory | `Core/Ports/Data/IConsentIdentityDb.cs`, `Core/Ports/Data/IConsentIdentityDbFactory.cs`, `Infrastructure/ConsentIdentityDbFactory.cs` |
 | Reused queries as extensions on the data port | `Core/Extensions/DeveloperRegistrationDbExtensions.cs` |
 | Rate limit on the public form's POSTs only: sliding window per client, IPv6 `/64` | `Web/RateLimiting/`, `Web/Features/Registration/RegisterPage.razor`, `Tests/Web/` |
 | Provider failure translated to a domain exception | `Infrastructure/ConsentIdentityDbContext.cs` (`SaveChangesAsync`) |
@@ -71,7 +71,7 @@ Web ──────────► Core ◄────────── Inf
 | Background work: the row is the record, the channel only a wake-up, sweeps recover lost signals, a scheduled check notices redeemed invitations | `Core/Features/Invitations/`, `Web/BackgroundServices/`, `Infrastructure/Queues/`, `Tests/Web/BackgroundServices/` |
 | Workers laid out like features: one folder per worker, a shared base, logic in use cases, enforced by tests | `Web/BackgroundServices/`, `Tests/Architecture/ArchitectureTests.cs` |
 | Several hosts: claim a row under a concurrency token before calling Entra | `Core/Entities/IVersioned.cs`, `Core/Extensions/DeveloperRegistrationDbExtensions.cs` (`ClaimAsync`), `Infrastructure/Interceptors/VersionInterceptor.cs`, `Tests/Infrastructure/DeveloperRegistrationDbExtensionsTests.cs` |
-| An external SDK behind a port, used by one Infrastructure class and invisible elsewhere | `Core/IUserManagementService.cs`, `Infrastructure/UserManagement/GraphUserManagementService.cs`, `Infrastructure/*.csproj` (`PrivateAssets`), `Tests/Architecture/ArchitectureTests.cs` |
+| An external SDK behind a port, used by one Infrastructure class and invisible elsewhere | `Core/Ports/Directory/IUserManagementService.cs`, `Infrastructure/UserManagement/GraphUserManagementService.cs`, `Infrastructure/*.csproj` (`PrivateAssets`), `Tests/Architecture/ArchitectureTests.cs` |
 
 ## Adaptations for SQLite, and what is left out
 

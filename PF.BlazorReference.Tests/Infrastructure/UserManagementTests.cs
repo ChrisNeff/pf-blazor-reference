@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PF.BlazorReference.Core;
 using PF.BlazorReference.Infrastructure;
 using PF.BlazorReference.Infrastructure.UserManagement;
+using PF.BlazorReference.Core.Ports.Directory;
 
 namespace PF.BlazorReference.Tests.Infrastructure;
 

@@ -1,6 +1,6 @@
 using PF.BlazorReference.Core.Entities;
 
-namespace PF.BlazorReference.Core;
+namespace PF.BlazorReference.Core.Ports.Directory;
 
 /// <summary>
 /// Port to the user directory (Entra ID, as B2B guests), implemented in Infrastructure. Core never

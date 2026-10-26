@@ -1,4 +1,4 @@
-namespace PF.BlazorReference.Core;
+namespace PF.BlazorReference.Core.Ports.Data;
 
 /// <summary>
 /// Raised by the data port when a save is based on a stale read: another context (another request, or

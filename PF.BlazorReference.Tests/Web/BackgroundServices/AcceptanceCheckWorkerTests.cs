@@ -9,6 +9,7 @@ using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Features.Invitations;
 using PF.BlazorReference.Tests.Support;
 using PF.BlazorReference.Web.BackgroundServices.AcceptanceCheck;
+using PF.BlazorReference.Core.Ports.Directory;
 
 namespace PF.BlazorReference.Tests.Web.BackgroundServices;
 

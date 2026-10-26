@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using PF.BlazorReference.Core.Features.Registration;
 
@@ -31,9 +32,14 @@ public sealed class RegisterEndpointTests : IClassFixture<RegisterEndpointTests.
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            if (disposing)
-                foreach (var file in Directory.GetFiles(Path.GetTempPath(), Path.GetFileName(databasePath) + "*"))
-                    File.Delete(file);
+            if (!disposing)
+                return;
+
+            // The host is down, but the provider's connection pool still holds the file open (Windows
+            // refuses to delete it until the pooled connections are closed).
+            SqliteConnection.ClearAllPools();
+            foreach (var file in Directory.GetFiles(Path.GetTempPath(), Path.GetFileName(databasePath) + "*"))
+                File.Delete(file);
         }
     }
 

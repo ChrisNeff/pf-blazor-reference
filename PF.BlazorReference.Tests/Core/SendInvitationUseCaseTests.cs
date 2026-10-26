@@ -6,6 +6,8 @@ using PF.BlazorReference.Core;
 using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Features.Invitations;
 using PF.BlazorReference.Tests.Support;
+using PF.BlazorReference.Core.Ports.Data;
+using PF.BlazorReference.Core.Ports.Directory;
 
 namespace PF.BlazorReference.Tests.Core;
 

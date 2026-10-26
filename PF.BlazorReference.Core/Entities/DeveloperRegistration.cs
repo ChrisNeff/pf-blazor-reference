@@ -7,7 +7,7 @@ namespace PF.BlazorReference.Core.Entities;
 /// Always-valid aggregate: the only way to get one is <see cref="Create"/>, and state with rules
 /// has no public setter. Error codes are the field names ("Name", "Email") so the UI can place them.
 /// </summary>
-public sealed class DeveloperRegistration : IAuditable, IVersioned
+public sealed class DeveloperRegistration : IEntity, IAuditable, IClaimable
 {
     public const int NameMaxLength = 100;
     public const int EmailMaxLength = 254;
@@ -49,8 +49,7 @@ public sealed class DeveloperRegistration : IAuditable, IVersioned
 
     /// <summary>
     /// Takes the row for one worker before it calls Entra. Refused while another owner's claim is still
-    /// live. The claim only counts once saved: two hosts that both take it in memory race on
-    /// <see cref="Version"/>, and the second save is rejected.
+    /// live. The claim only counts once saved (see <see cref="IClaimable"/>).
     /// </summary>
     public bool TryClaim(string owner, DateTime nowUtc, TimeSpan lease)
     {

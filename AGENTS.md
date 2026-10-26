@@ -33,10 +33,11 @@ Slices mirror by folder name: `Web/Features/<Feature>/` holds the container page
 
 Core is laid out by role:
 
-- `Entities/`: one file per entity, enum and entity interface (`DeveloperRegistration`, `RegistrationStatus`, `IAuditable`, `IVersioned`). Features never define entities. A status change with rules is a method on the aggregate (`RequestProvisioning()`, `MarkInvited()`, `MarkActivated()`), never a setter.
+- `Entities/`: one file per entity, enum and entity interface (`DeveloperRegistration`, `RegistrationStatus`, `IEntity`, `IAuditable`, `IVersioned`, `IClaimable`). Common properties are narrow interfaces an entity opts into, never a base class: `IEntity` (`Id`), `IAuditable`, `IVersioned`, and `IClaimable` (the worker lease, which implies `IEntity` and `IVersioned`). Features never define entities. A status change with rules is a method on the aggregate (`RequestProvisioning()`, `MarkInvited()`, `MarkActivated()`), never a setter.
 - `Features/<Feature>/`: made of use-case classes and little else.
 - `Extensions/`: reused queries (see Reused queries below).
-- The Core root holds the ports and shared abstractions, one type per file.
+- `Ports/`: one folder per port, holding the port interface and the exceptions it raises, one type per file (`Ports/Data/` has `IConsentIdentityDb`, `IConsentIdentityDbFactory`, `UniqueConstraintViolationException`, `ConcurrencyConflictException`; `Ports/Directory/` has `IUserManagementService` and `UserManagementException`). A port with a single file and no exception of its own sits directly in `Ports/` (`IInvitationQueue`). Namespaces mirror the folders.
+- The Core root holds only `IUseCase` and `ServiceCollectionExtensions`; an architecture test enforces it.
 
 A **use case** is one class named `<Verb><Noun>UseCase`, in `Core/Features/<Feature>/<Name>UseCase.cs`, implementing `IUseCase<TRequest, TResult>`. It nests its own `Request` and `Response` records. There is no mediator package. Register each use case with one line in `AddCore()`. Pages inject the concrete use-case class. An architecture test requires every type under `Features/` to be a `*UseCase`.
 
@@ -92,7 +93,7 @@ ProvisioningRequested → ProvisioningFailed (the grid's button retries)
 - **The row is the record of the work; the queue is only a wake-up.** `RequestInvitationUseCase` sets `ProvisioningRequested`, saves, and only then calls `IInvitationQueue.TryEnqueue`. The queue (`Infrastructure/Queues/ChannelInvitationQueue`, registered by `AddInfrastructure`) is a bounded in-memory `Channel<Guid>` per host; the worker reads it through the same Core interface (`ReadAllAsync`).
 - **Several hosts.** Every host runs both workers, so a row is **claimed before Entra is written to**:
   - `DeveloperRegistration` is `IVersioned`: `Version` is an EF concurrency token, incremented on every update by `VersionInterceptor` (SQL Server would use `rowversion`). A save based on a stale read throws `ConcurrencyConflictException`, translated from `DbUpdateConcurrencyException` in the DbContext.
-  - `ClaimAsync` (`Core/Extensions/DeveloperRegistrationDbExtensions`) loads the row, checks its status, sets `ClaimedBy` (host and process, `ClaimOwner.Current`) and `ClaimedUntilUtc`, and saves. It returns null when another owner's lease is live or another host saved first; the use case then skips the row.
+  - `ClaimAsync` (`Core/Extensions/DeveloperRegistrationDbExtensions`; the claim and save itself is the generic `TryClaimAndSaveAsync` in `ClaimableDbExtensions`, for any `IClaimable`) loads the row, checks its status, sets `ClaimedBy` (host and process, `ClaimOwner.Current`) and `ClaimedUntilUtc`, and saves. It returns null when another owner's lease is live or another host saved first; the use case then skips the row.
   - The lease (5 minutes) lapses, so a row held by a crashed host is picked up again. Every worker outcome releases the claim.
   - `SendInvitationUseCase` claims before inviting. `ActivateAcceptedGuestUseCase` checks acceptance with a read and claims only when there is something to write, so idle checks write nothing.
   - The grid's request also saves under the token, so two people clicking at once get one request and one conflict message.

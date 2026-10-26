@@ -7,6 +7,9 @@ using PF.BlazorReference.Core;
 using PF.BlazorReference.Infrastructure.Interceptors;
 using PF.BlazorReference.Infrastructure.Queues;
 using PF.BlazorReference.Infrastructure.UserManagement;
+using PF.BlazorReference.Core.Ports.Data;
+using PF.BlazorReference.Core.Ports.Directory;
+using PF.BlazorReference.Core.Ports;
 
 namespace PF.BlazorReference.Infrastructure;
 
