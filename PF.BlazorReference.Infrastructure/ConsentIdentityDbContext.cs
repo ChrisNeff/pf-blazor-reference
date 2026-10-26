@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PF.BlazorReference.Core;
 using PF.BlazorReference.Core.Entities;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Infrastructure;
 
@@ -25,6 +26,11 @@ public sealed class ConsentIdentityDbContext(DbContextOptions<ConsentIdentityDbC
         try
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // The row's Version is not the one this context read: someone else saved it first.
+            throw new ConcurrencyConflictException(ex);
         }
         catch (DbUpdateException ex) when (ex.InnerException is SqliteException { SqliteExtendedErrorCode: SqliteConstraintUnique })
         {

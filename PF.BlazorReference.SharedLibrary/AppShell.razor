@@ -13,10 +13,3 @@
         </ErrorContent>
     </ErrorBoundary>
 </main>
-
-@code {
-    [Parameter, EditorRequired] public string AppTitle { get; set; } = "";
-    // An array, because NavIsland needs one (see the comment there).
-    [Parameter, EditorRequired] public NavItem[] NavItems { get; set; } = [];
-    [Parameter] public RenderFragment? ChildContent { get; set; }
-}

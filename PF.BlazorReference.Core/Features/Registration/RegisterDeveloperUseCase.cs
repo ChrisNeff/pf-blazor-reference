@@ -1,13 +1,23 @@
 using ErrorOr;
 using PF.BlazorReference.Core.Entities;
 using PF.BlazorReference.Core.Extensions;
+using PF.BlazorReference.Core.Ports.Data;
 
 namespace PF.BlazorReference.Core.Features.Registration;
 
-/// <summary>Registers a developer.</summary>
+/// <summary>
+/// Registers a developer: records the row as Submitted, and nothing else. Entra is not involved; the
+/// invitation is requested later from the registrations grid (<see cref="Invitations.RequestInvitationUseCase"/>).
+/// </summary>
 public sealed class RegisterDeveloperUseCase(IConsentIdentityDbFactory dbFactory)
     : IUseCase<RegisterDeveloperUseCase.Request, ErrorOr<RegisterDeveloperUseCase.Response>>
 {
+    /// <summary>The longest name the domain accepts, for callers that validate early (the web form's annotations).</summary>
+    public const int NameMaxLength = DeveloperRegistration.NameMaxLength;
+
+    /// <summary>The longest email the domain accepts.</summary>
+    public const int EmailMaxLength = DeveloperRegistration.EmailMaxLength;
+
     public sealed record Request(string? Name, string? Email);
 
     public sealed record Response(Guid RegistrationId);

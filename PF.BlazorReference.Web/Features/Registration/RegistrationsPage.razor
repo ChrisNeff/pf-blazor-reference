@@ -5,7 +5,10 @@
 
 <PageTitle>Registrations</PageTitle>
 
-<h1>Registrations</h1>
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+    <h1>Registrations</h1>
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" aria-label="Refresh" Disabled="state.Loading" OnClick="LoadAsync" />
+</MudStack>
 
 @if (state.Error is not null)
 {
@@ -17,5 +20,6 @@ else if (state.Loading)
 }
 else
 {
-    <RegistrationTable Items="state.Items" HighlightId="highlightId" />
+    <RegistrationTable Rows="state.Rows" HighlightId="highlightId"
+                       ShowInvite="CanInvite" CurrentRecordProcessingId="currentRecordProcessingId" OnInvite="RequestInvitationAsync" />
 }

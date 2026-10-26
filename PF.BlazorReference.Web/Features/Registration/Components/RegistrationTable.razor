@@ -1,8 +1,8 @@
 @namespace PF.BlazorReference.Web.Features.Registration.Components
-@using PF.BlazorReference.Core.Features.Registration
+@using PF.BlazorReference.Web.Features.Registration.ViewModels
 
-@* Presentation component: sorting and filtering are local view state, not data access. *@
-<MudDataGrid T="ListRegistrationsUseCase.Item" Items="Items" SortMode="SortMode.Multiple" QuickFilter="MatchesSearch"
+@* Presentation component: binds a view model, raises OnInvite; sorting and the search box are local UI state. *@
+<MudDataGrid T="RegistrationRow" Items="Rows" SortMode="SortMode.Multiple" QuickFilter="MatchesSearch"
              RowClassFunc="RowClass" Hover="true" Dense="true">
     <ToolBarContent>
         <MudTextField @bind-Value="search" Placeholder="Search name or email" Immediate="true"
@@ -11,28 +11,31 @@
     <Columns>
         <PropertyColumn Property="r => r.Name" Title="Name" />
         <PropertyColumn Property="r => r.Email" Title="Email" />
-        <PropertyColumn Property="r => r.Status" Title="Status" />
+        <TemplateColumn T="RegistrationRow" Title="Status" SortBy="r => r.StatusLabel">
+            <CellTemplate>
+                <MudTooltip Text="@context.Item.StatusHint" Disabled="@(context.Item.StatusHint is null)">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@context.Item.StatusColor">
+                        @context.Item.StatusLabel
+                    </MudChip>
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
         <PropertyColumn Property="r => r.CreatedAtUtc" Title="Created (UTC)" Format="yyyy-MM-dd HH:mm" />
+        @if (ShowInvite)
+        {
+            <TemplateColumn T="RegistrationRow" Title="Entra" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Send"
+                               Disabled="@(!context.Item.CanInvite || context.Item.Id == CurrentRecordProcessingId)"
+                               OnClick="@(() => OnInvite.InvokeAsync(context.Item.Id))">
+                        @context.Item.InviteLabel
+                    </MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        }
     </Columns>
     <NoRecordsContent>No registrations yet.</NoRecordsContent>
     <PagerContent>
-        <MudDataGridPager T="ListRegistrationsUseCase.Item" />
+        <MudDataGridPager T="RegistrationRow" />
     </PagerContent>
 </MudDataGrid>
-
-@code {
-    private string? search;
-
-    [Parameter, EditorRequired] public IReadOnlyList<ListRegistrationsUseCase.Item> Items { get; set; } = [];
-
-    /// <summary>The row to highlight, such as the one just registered.</summary>
-    [Parameter] public Guid? HighlightId { get; set; }
-
-    private bool MatchesSearch(ListRegistrationsUseCase.Item item) =>
-        string.IsNullOrWhiteSpace(search)
-        || item.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
-        || item.Email.Contains(search, StringComparison.OrdinalIgnoreCase);
-
-    private string RowClass(ListRegistrationsUseCase.Item item, int index) =>
-        item.Id == HighlightId ? "pf-row-highlight" : "";
-}

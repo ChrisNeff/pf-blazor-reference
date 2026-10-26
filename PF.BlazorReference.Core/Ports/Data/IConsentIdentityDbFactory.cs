@@ -1,4 +1,4 @@
-namespace PF.BlazorReference.Core;
+namespace PF.BlazorReference.Core.Ports.Data;
 
 /// <summary>Creates a short-lived <see cref="IConsentIdentityDb"/>. Each Handle() call creates its own.</summary>
 public interface IConsentIdentityDbFactory

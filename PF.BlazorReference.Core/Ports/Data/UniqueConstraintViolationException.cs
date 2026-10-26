@@ -1,4 +1,4 @@
-namespace PF.BlazorReference.Core;
+namespace PF.BlazorReference.Core.Ports.Data;
 
 /// <summary>
 /// Raised by the data port when a unique index rejects a write. Infrastructure translates the
